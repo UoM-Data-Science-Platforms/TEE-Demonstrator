@@ -27,6 +27,10 @@ on:
         required: false
         default: 'uksouth'
         type: string
+      admin_source_ip:
+        description: 'CIDR allowed to SSH into the confidential VM (e.g. 203.0.113.5/32)'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -48,6 +52,8 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
       ARM_USE_OIDC: true
       TF_VAR_environment: ${{ inputs.environment }}
+      TF_VAR_admin_source_ip: ${{ inputs.admin_source_ip }}
+      TF_VAR_admin_ssh_public_key: ${{ secrets.ADMIN_SSH_PUBLIC_KEY }}
 
     steps:
       - name: Checkout Code
