@@ -144,8 +144,8 @@ resource "azurerm_linux_virtual_machine" "cvm" {
 
   disable_password_authentication = true
 
-  # Confidential VM (Intel TDX) settings
-  security_type       = "ConfidentialVM"
+  # Confidential VM (Intel TDX) settings - security type is inferred from
+  # os_disk.security_encryption_type below, there is no top-level security_type argument
   vtpm_enabled        = true
   secure_boot_enabled = true
 
