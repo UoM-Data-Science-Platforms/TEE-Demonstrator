@@ -53,7 +53,7 @@ jobs:
       ARM_USE_OIDC: true
       TF_VAR_environment: ${{ inputs.environment }}
       TF_VAR_admin_source_ip: ${{ inputs.admin_source_ip }}
-      TF_VAR_admin_ssh_public_key: ${{ secrets.ADMIN_SSH_PUBLIC_KEY }}
+      TF_VAR_admin_ssh_public_key: ${{ vars.ADMIN_SSH_PUBLIC_KEY }}
 
     steps:
       - name: Checkout Code

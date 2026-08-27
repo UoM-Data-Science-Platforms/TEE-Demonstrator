@@ -47,7 +47,7 @@ jobs:
       # Values below don't affect destroy behavior for resources already in state -
       # they only need to be set so Terraform doesn't prompt for required variables with no default.
       TF_VAR_admin_source_ip: "0.0.0.0/32"
-      TF_VAR_admin_ssh_public_key: ${{ secrets.ADMIN_SSH_PUBLIC_KEY }}
+      TF_VAR_admin_ssh_public_key: ${{ vars.ADMIN_SSH_PUBLIC_KEY }}
 
     steps:
       - name: Verify Confirmation
