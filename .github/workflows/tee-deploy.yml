@@ -1,0 +1,70 @@
+name: TEE Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target GitHub Environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      action:
+        description: 'Terraform Action'
+        required: true
+        default: 'apply'
+        type: choice
+        options:
+          - apply
+          - plan
+      resource_group_name:
+        description: 'Azure Resource Group Name (optional override)'
+        required: false
+        type: string
+      location:
+        description: 'Azure Region (optional override)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  tee-deploy:
+    name: Deploy TEE Infrastructure
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      ARM_USE_OIDC: true
+      TF_VAR_environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        if: ${{ inputs.action == 'apply' }}
+        run: terraform apply -auto-approve tfplan

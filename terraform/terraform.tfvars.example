@@ -1,0 +1,9 @@
+resource_group_name    = "rg-tee-demonstrator-dev"
+location               = "westeurope"
+storage_account_prefix = "teedemo"
+environment            = "dev"
+tags = {
+  Project     = "TEE-demonstrator"
+  Environment = "dev"
+  ManagedBy   = "Terraform"
+}

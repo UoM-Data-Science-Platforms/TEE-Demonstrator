@@ -1,0 +1,65 @@
+name: TEE Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target GitHub Environment to Destroy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      confirm_destroy:
+        description: 'Type "DESTROY" to confirm teardown'
+        required: true
+        type: string
+      resource_group_name:
+        description: 'Azure Resource Group Name (optional override)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  tee-destroy:
+    name: Destroy TEE Infrastructure
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      ARM_USE_OIDC: true
+      TF_VAR_environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Verify Confirmation
+        run: |
+          if [ "${{ inputs.confirm_destroy }}" != "DESTROY" ]; then
+            echo "::error::Confirmation text did not match 'DESTROY'. Aborting."
+            exit 1
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.0
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve
