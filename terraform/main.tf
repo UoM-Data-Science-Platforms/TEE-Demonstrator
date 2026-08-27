@@ -176,3 +176,4 @@ resource "azurerm_attestation_provider" "maa" {
   location            = azurerm_resource_group.rg.location
   tags                = var.tags
 }
+sudo ./AttestationClient -a https://sharedeus2.eus2.attest.azure.net -o token | cut -d '.' -f2 | base64 -d 2>/dev/null | python3 -m json.tool
