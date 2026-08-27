@@ -166,3 +166,13 @@ resource "azurerm_linux_virtual_machine" "cvm" {
     Environment = var.environment
   })
 }
+
+# Microsoft Azure Attestation (MAA) - minimal, default/baseline policy.
+# No custom policy or auth is configured: the Attest data-plane call is anonymous,
+# so the VM just needs the attestation_uri output below - no RBAC/identity wiring required.
+resource "azurerm_attestation_provider" "maa" {
+  name                = "${replace(var.vm_name, "-", "")}maa"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  tags                = var.tags
+}

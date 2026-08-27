@@ -32,3 +32,8 @@ output "vm_ssh_command" {
   value       = "ssh ${var.admin_username}@${azurerm_public_ip.vm_pip.ip_address}"
   description = "Convenience SSH command to reach the VM"
 }
+
+output "attestation_provider_uri" {
+  value       = azurerm_attestation_provider.maa.attestation_uri
+  description = "URI of the Microsoft Azure Attestation provider - pass to AttestationClient with -a"
+}
