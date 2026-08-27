@@ -175,3 +175,4 @@ resource "azurerm_attestation_provider" "maa" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   tags                = var.tags
+}
