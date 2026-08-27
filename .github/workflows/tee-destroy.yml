@@ -10,8 +10,6 @@ on:
         type: choice
         options:
           - dev
-          - staging
-          - prod
       confirm_destroy:
         description: 'Type "DESTROY" to confirm teardown'
         required: true
@@ -44,6 +42,7 @@ jobs:
 
     steps:
       - name: Verify Confirmation
+        working-directory: .
         run: |
           if [ "${{ inputs.confirm_destroy }}" != "DESTROY" ]; then
             echo "::error::Confirmation text did not match 'DESTROY'. Aborting."
