@@ -25,6 +25,7 @@ on:
       location:
         description: 'Azure Region (optional override)'
         required: false
+        default: 'uksouth'
         type: string
 
 permissions:
@@ -56,6 +57,15 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.7.0
+
+      - name: Set Terraform Variables
+        run: |
+          if [ -n "${{ inputs.resource_group_name }}" ]; then
+            echo "TF_VAR_resource_group_name=${{ inputs.resource_group_name }}" >> "$GITHUB_ENV"
+          fi
+          if [ -n "${{ inputs.location }}" ]; then
+            echo "TF_VAR_location=${{ inputs.location }}" >> "$GITHUB_ENV"
+          fi
 
       - name: Terraform Init
         run: |
