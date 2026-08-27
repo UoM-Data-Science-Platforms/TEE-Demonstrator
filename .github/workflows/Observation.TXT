@@ -1,0 +1,53 @@
+Subscription with quota for the standardDCESv6Family in your target region — confidential VM families are often not enabled by default; may need a quota increase request via Azure support/portal.
+Confirm Standard_DC2es_v6 is actually offered in your chosen region (az vm list-skus --size Standard_DC2es_v6 --location westeurope -o table) — DCesv6 availability is limited to a subset of regions.
+Resource providers registered on the subscription: Microsoft.Compute, Microsoft.Network, Microsoft.Storage (already needed), and later Microsoft.Attestation.
+
+1. Azure subscription prerequisites
+
+Subscription with quota for the standardDCESv6Family in your target region — confidential VM families are often not enabled by default; may need a quota increase request via Azure support/portal.
+Confirm Standard_DC2es_v6 is actually offered in your chosen region (az vm list-skus --size Standard_DC2es_v6 --location westeurope -o table) — DCesv6 availability is limited to a subset of regions.
+Resource providers registered on the subscription: Microsoft.Compute, Microsoft.Network, Microsoft.Storage (already needed), and later Microsoft.Attestation.
+2. Identity / CI auth (already partly in place)
+
+Your workflows already use OIDC federation (ARM_CLIENT_ID/ARM_TENANT_ID/ARM_SUBSCRIPTION_ID + ARM_USE_OIDC) — same App Registration/federated credential works for the new resources, no new identity needed, just make sure its role assignment (Contributor, presumably) covers VM/network creation on the resource group.
+3. Terraform resources to add (networking + compute)
+
+azurerm_virtual_network + azurerm_subnet
+azurerm_network_security_group with an SSH rule scoped to your IP, associated to the subnet
+azurerm_public_ip (Standard SKU, required for DC-series)
+azurerm_network_interface
+azurerm_linux_virtual_machine with:
+size = "Standard_DC2es_v6"
+security_type = "ConfidentialVM", vtpm_enabled = true, secure_boot_enabled = true
+os_disk.security_encryption_type = "VMGuestStateOnly" (or DiskWithVMGuestState if you want the OS disk itself encrypted, at extra Key Vault complexity)
+source_image_reference: Canonical 0001-com-ubuntu-confidential-vm-jammy, sku 22_04-lts-cvm
+SSH key auth, no password
+4. Inputs you have to supply (no sensible default)
+
+An SSH public key for the admin user
+Your own public IP/CIDR for the NSG allow-rule
+5. CI/workflow changes
+
+tee-deploy.yml: new workflow_dispatch input for source IP (or a repo/environment variable), and a secret for the SSH public key, both mapped to TF_VAR_*.
+tee-destroy.yml: needs the same TF_VAR_* set (even placeholder values) so terraform destroy doesn't hang waiting for interactive input on a required variable with no default.
+6. Not needed yet for this pass (phase 2 — attestation)
+
+azurerm_attestation_provider (Microsoft Azure Attestation resource)
+Guest attestation VM extension (Microsoft.Azure.Security.LinuxAttestation or via az confcom/Microsoft.Azure.Security.AttestationForLinux) installed on the VM
+An attestation policy document defining what "trusted" TDX quote looks like
+vtpm_enabled = true, secure_boot_enabled = true, and os_disk.security_encryption_type = "VMGuestStateOnly" together are what actually make Azure provision it as a Confidential VM.
+Terraform's ready. Deploy it via the tee-deploy workflow, then run this on the VM:
+Terraform's ready. Deploy it via the tee-deploy workflow, then run this on the VM:
+
+
+sudo ./AttestationClient -a https://<attestation_provider_uri output> -o token
+That's the whole "connect the dots" loop: your VM generates TDX evidence → sends it to your own MAA instance → MAA validates the hardware chain of trust (TDX quote signature, TCB status, boot measurements) → returns a signed JWT as the "approval." No custom policy, no auth, no RBAC — the default baseline policy already does the validation, and the Attest call itself is anonymous over TLS.
+
+To see what hardware-specific claim it actually validated, decode the token and look at the full claim set rather than me guessing key names:
+
+
+sudo ./AttestationClient -o token | cut -d '.' -f2 | base64 -d 2>/dev/null | python3 -m json.tool
+Look for a x-ms-isolation-tee object — that's where the TEE-specific claims live (attestation type, compliance status, and TDX-specific measurement/identity fields). Run it and paste the output here — I'll help you pick out the specific claim that maps to what you're calling the "hardware-level identifier" and we can decide if you want a custom attestation policy that gates on it, or if seeing it in the token is enough to call this connected.
+
+
+sudo ./AttestationClient -a https://paste -o token | cut -d '.' -f2 | base64 -d 2>/dev/null | python3 -m json.tool
